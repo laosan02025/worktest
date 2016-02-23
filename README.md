@@ -1,2 +1,2 @@
 # worktest
-stror for test code
+store for test code
