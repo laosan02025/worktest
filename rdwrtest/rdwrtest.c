@@ -4,7 +4,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define TSTBUFSIZE 64
+#define TSTBUFSIZE 64 //一次读写块的大小
+
 void main (void)
 {
 	int fdwr=-1;
