@@ -1,0 +1,122 @@
+#!/bin/sh
+
+CURDIR=$PWD
+
+OURNAME=kv_build
+PRELOADPATH=$OURNAME/preload/
+APPPATHNAME=system/priv-app
+LIBPATHNAME=system/lib
+BINFILES="KvServer kvauthserver"
+BINFILESPATH=system/bin
+
+if [ `basename $CURDIR` = "$OURNAME" ] ;then
+	cd ..
+else
+	echo $CURDIR
+fi
+
+fastboot(){
+	setbuildenv
+	make hiboot -j32 2>&1 | tee hiboot.log
+}
+
+recovery(){
+	setbuildenv
+	make recoveryimg -j32 2>&1 | tee recovery.log
+}
+
+system(){
+	setbuildenv
+	if [ -z "$OUTPATH"  ] ;then
+		make bigfish -j32 2>&1 | tee bigfish.log
+	fi
+	preload
+	make bigfish -j32 2>&1 | tee bigfish.log	
+}
+
+preload(){
+	croot
+	if [ -z "$OUTPATH" ] ;then
+		echo NO OUTPATH FIND Please make system first!!!
+	else
+		echo ==================================================================
+		echo preload files to path:
+		echo $OUTPATH
+		echo  
+		echo ==================================================================
+		for binfiles in $BINFILES ; do
+			if [ -f $PRELOADPATH/$binfiles ] ;then
+				echo cp $binfiles to $OUTPATH/$BINFILESPATH
+				cp $PRELOADPATH/$binfiles $OUTPATH/$BINFILESPATH
+				chmod ugo+x $OUTPATH/$BINFILESPATH/$binfiles 
+			fi
+		done
+		
+		find $PRELOADPATH -iname "*.apk" -exec cp {} $OUTPATH/$APPPATHNAME \;
+		find $PRELOADPATH -iname "*.so" -exec cp {} $OUTPATH/$LIBPATHNAME \;
+	fi
+}
+
+update(){
+	setbuildenv
+	make updatezip -j32 2>&1 | tee updatezip.log
+}
+
+setbuildenv(){
+	if [ -z "$TARGET_PRODUCT" ] ; then
+		source build/envsetup.sh
+		lunch 
+	fi
+	export OUTPATH=./out/target/product/$TARGET_PRODUCT
+}
+
+helpinfo(){
+	echo 
+	echo =================================================================================================================
+	echo make key:
+	echo make_key releasekey '/C=CN/ST=JiangSu/L=NanJing/O=Company/OU=Department/CN=YourName/emailAddress=YourE-mailAddress'
+	echo dump key:
+	echo java -jar out/host/linux-x86/framework/dumpkey.jar build/target/product/security/testkey.x509.pem > bootable/recovery/res/keys
+	echo convert key: pem+pk8->jks
+	echo ./keytool-importkeypair -k ~/.android/debug.keystore -p android -pk8 platform.pk8 -cert platform.x509.pem -alias platform
+	echo signapk:
+	echo java -jar out/host/linux-x86/framework/signapk.jar -w  build/target/product/security/testkey.x509.pem build/target/product/security/testkey.pk8 out/target/product/Hi3796MV100/Emmc/update/sor_update.zip out/target/product/Hi3796MV100/Emmc/update/update.zip
+	echo ==================================================================================================================
+	echo 
+}
+
+echo =====================================
+echo 
+echo What do you want to make
+echo  
+echo =====================================
+
+
+select maketype in "fastboot" "recovery" "system" "update.zip"; do
+	echo =============================
+	echo
+	echo YOU CHOOSE MAKE $maketype
+	echo
+	echo =============================
+	
+	case $maketype in
+	fastboot) 
+		echo make fastboot
+		fastboot;;
+	recovery)
+		echo make recovery 
+		recovery;;
+	system)	
+		echo make system  
+		system;;
+	update.zip) 
+		echo make updatezip  
+		update;;
+	*)
+		echo HELP INFO:
+		helpinfo;;
+	esac
+	break;
+done
+
+cd $CURDIR
