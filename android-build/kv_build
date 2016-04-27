@@ -17,21 +17,42 @@ fi
 
 fastboot(){
 	setbuildenv
-	make hiboot -j32 2>&1 | tee hiboot.log
+	make hiboot -j2 2>&1 | tee hiboot.log
+}
+
+clean_fastboot(){
+	setbuildenv
+	rm -rf out/target/product/$TARGET_PRODUCT/obj/NAND_HIBOOT_OBJ/
+	rm -rf out/target/product/$TARGET_PRODUCT/obj/EMMC_HIBOOT_OBJ/
 }
 
 recovery(){
 	setbuildenv
-	make recoveryimg -j32 2>&1 | tee recovery.log
+	make recoveryimg -j2 2>&1 | tee recovery.log
+}
+
+clean_recovery(){
+	setbuildenv
+	rm -rf out/target/product/TARGET_PRODUCT/obj/RECOVERY_OBJ/
 }
 
 system(){
 	setbuildenv
 	if [ -z "$OUTPATH"  ] ;then
-		make bigfish -j32 2>&1 | tee bigfish.log
+		make bigfish -j2 2>&1 | tee bigfish.log
 	fi
 	preload
-	make bigfish -j32 2>&1 | tee bigfish.log	
+	make bigfish -j2 2>&1 | tee bigfish.log	
+}
+
+kernel(){
+	setbuildenv
+	make kernel -j2 2>&1 | tee kernel.log
+}
+
+clean_kernel(){
+	setbuildenv
+	rm -rf out/target/product/$TARGET_PRODUCT/obj/KERNEL_OBJ/
 }
 
 preload(){
@@ -73,14 +94,42 @@ setbuildenv(){
 helpinfo(){
 	echo 
 	echo =================================================================================================================
-	echo make key:
-	echo make_key releasekey '/C=CN/ST=JiangSu/L=NanJing/O=Company/OU=Department/CN=YourName/emailAddress=YourE-mailAddress'
-	echo dump key:
-	echo java -jar out/host/linux-x86/framework/dumpkey.jar build/target/product/security/testkey.x509.pem > bootable/recovery/res/keys
-	echo convert key: pem+pk8->jks
-	echo ./keytool-importkeypair -k ~/.android/debug.keystore -p android -pk8 platform.pk8 -cert platform.x509.pem -alias platform
-	echo signapk:
-	echo java -jar out/host/linux-x86/framework/signapk.jar -w  build/target/product/security/testkey.x509.pem build/target/product/security/testkey.pk8 out/target/product/Hi3796MV100/Emmc/update/sor_update.zip out/target/product/Hi3796MV100/Emmc/update/update.zip
+	echo 
+	echo 1.If you want compile SECURITY version,you must edit device/hisilicon/$TARGET_PRODUCT/device.mk :
+	echo "  HISILICON_SECURITY_L2 := true"
+	echo 
+	echo 2.If you add some external APIs,please run "make update-api" to update frameworks/base/api/current.txt .
+	echo 
+	echo 3.You can edit kernel recovery and sdk configs by command :
+	echo "  make kernel_menuconfig"
+	echo "  make recovery_menuconfig"
+	echo "  cd device/hisilicon/bigfish/sdk && make menuconfig SDK_CFGFILE=configs/hi3798mdmo1a_hi3798mv100_android_cfg.mak"
+	echo 
+	echo 4.To update driver modules,run ./device/hisilicon/Hi3798MV100/kernel_module.sh
+	echo
+	echo 5.To update wifi driver,run make wifi -j2 2>&1 | tee wifi.log
+	echo 
+	echo 6.Modify bootargs:   device/hisilicon/$TARGET_PRODUCT/etc/bootargs_Hi3798MV100-nand.txt
+	echo  
+	echo 7. device/hisilicon/$TARGET_PRODUCT/BoardConfig.mk
+	echo 
+	echo 8.make fs img:
+	echo "  make ubifs -j2 2>&1 | tee ubifs.log" 
+	echo "  make ext4fs -j2 2>&1 | tee ext4fs.log"
+	echo 
+	echo 9.make key:
+	echo "  make_key releasekey '/C=CN/ST=JiangSu/L=NanJing/O=Company/OU=Department/CN=YourName/emailAddress=YourE-mailAddress'"
+	echo 
+	echo 10.dump key:
+	echo "  java -jar out/host/linux-x86/framework/dumpkey.jar build/target/product/security/testkey.x509.pem > bootable/recovery/res/keys"
+	echo 
+	echo "11.convert key: pem+pk8->jks"
+	echo "  ./keytool-importkeypair -k ~/.android/debug.keystore -p android -pk8 platform.pk8 -cert platform.x509.pem -alias platform"
+	echo 
+	echo 12.signapk:
+	echo "  java -jar out/host/linux-x86/framework/signapk.jar -w  build/target/product/security/testkey.x509.pem "
+	echo "  build/target/product/security/testkey.pk8 source.apk destine.apk"
+	echo 
 	echo ==================================================================================================================
 	echo 
 }
@@ -92,7 +141,7 @@ echo
 echo =====================================
 
 
-select maketype in "fastboot" "recovery" "system" "update.zip"; do
+select maketype in "fastboot" "recovery" "kernel" "system" "update.zip" "clean" "help"; do
 	echo =============================
 	echo
 	echo YOU CHOOSE MAKE $maketype
@@ -112,9 +161,34 @@ select maketype in "fastboot" "recovery" "system" "update.zip"; do
 	update.zip) 
 		echo make updatezip  
 		update;;
-	*)
+	help)
 		echo HELP INFO:
 		helpinfo;;
+	kernel)
+		echo make kernel
+		kernel;;
+	clean)
+		echo
+		echo YOU WILL CEAN SOMETHING
+		echo 
+
+		select cleantype in "fastboot" "recovery" "kernel" "system" ; do
+			echo 
+			echo YOU CHOOSE CLEAN $cleantype
+			echo
+			
+			case $cleantype in
+			fastboot)
+				clean_fastboot;;
+			recovery)
+				clean_recovery;;
+			kernel)
+				clean_kernel;;
+			system)
+				make clean;;
+			esac
+			break;
+		done
 	esac
 	break;
 done
