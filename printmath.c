@@ -67,15 +67,16 @@ void main(){
 			if((range-a)!=0){
 				b = rand()%(range - a);
 			}else{
-				
+				b = 0;
 			}
 		}else{//减法
-    		piece = a;
+			if(a!=0){
+				b = rand()%a;
+			}else{
+				b =0;
+			}
 		}
-		if(piece==0)
-			b=0;
-		else
-			b = rand()%piece;
+
 		//计算得数
    		if(calc==0)//加法
 			c = a+b;
