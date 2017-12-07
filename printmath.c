@@ -7,7 +7,7 @@ void main() {
 	int i, a, b, c, range, total, calc, piece;//a+b=c
 	char tmpbuf[BUFFERSIZE];
 	FILE * outfile;
-	int format, mask, contiflag, conti, conticalc,sum;
+	int format, mask, contiflag, conti, conticalc,sum,match;
 
 	char printformat[BUFFERSIZE];
 
@@ -39,7 +39,7 @@ void main() {
 			strcpy(printformat, "%3d %c %3d =       ");
 	}
 	else {
-		if (format == 2) {
+		if (format == 1) {
 			strcpy(printformat, "%3d %c%3d %c%3d=       ");
 		}
 	}
@@ -55,7 +55,13 @@ void main() {
 			}
 		}
 		else {//连加
-			if (i % 4 == 0) {
+			if (format == 2) {//算数空白
+				match = 3;
+			}
+			else {
+				match = 4;
+			}
+			if (i % match == 0) {
 				printf("\n");
 				fputs("\n", outfile);
 			}
