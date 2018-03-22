@@ -42,7 +42,7 @@ void dirwalk(char *dir,void(*fcn)(char*))
 		}
 
 	}
-
+	closedir(dfd);
 }
 
 void replaceadix(char* src,char *dst)
@@ -55,6 +55,7 @@ void replaceadix(char* src,char *dst)
 			break;
 		}
 	};
+	if(i==0)i=len;
 	strncpy(dst,src,i);
 	dst[i]='\0';
 	strcat(dst,".h");
@@ -79,7 +80,8 @@ void bintohex(char* file)
 		printf("%s openfile %s err\n",__FUNCTION__,dstfile);
 		goto fail;
 	}
-	while((ch=fgetc(fs))!=EOF){
+	while(!(feof(fs))){
+		ch=fgetc(fs);
 		if(i++%32==0){
 			fprintf(fd,"\n");
 		}
@@ -98,10 +100,10 @@ void createcode(char* name)
 	int i =0;
 	int len = strlen(name);
 	char dstname[256];	
-	FILE* fd;
+	FILE *fd;
 	char *p,*lp;
 	
-	if(strcasestr(name,".h")==NULL)
+	if(!strcasestr(name,".h"))
 		goto fail;
 	
 	p = strtok(name,"/");
@@ -130,12 +132,13 @@ void createcode(char* name)
 	fprintf(fd,"const unsigned char %s[] = {\n#include \"%s\"\n};\n",dstname,lp);
 
 	fflush(fd);
+	fclose(fd);
 	
 	if((fd=fopen("./target2.h","a"))==NULL)
 		goto fail;
 
 	fprintf(fd,"{\n    .data = %s,\n    .len = sizeof(%s)\n},\n",dstname,dstname);
-
+	fclose(fd);
 fail:
 	return;
 }
@@ -147,3 +150,4 @@ void main( int argc, char *argv[])
 	dirwalk(".",bintohex);
 	dirwalk(".",createcode);
 }
+
