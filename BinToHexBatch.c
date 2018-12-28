@@ -59,6 +59,12 @@ void replaceadix(char* src,char *dst)
 	strncpy(dst,src,i);
 	dst[i]='\0';
 	strcat(dst,".h");
+	i = 0;
+	while(dst[i]!='\0'){
+		if(dst[i]=='-')
+			dst[i]='_';
+		i++;
+	}
 	printf("%s\n",dst);
 }
 
@@ -143,10 +149,50 @@ fail:
 	return;
 }
 
+void hextobin(char* file)
+{
+	//printf("%s\n",file);	
+	FILE* fs,*fd;
+	char buf[256];
+	char dstfile[256];
+	char ch;
+	int i = 0;
+
+	file="./RGB.txt";
+	strcpy(dstfile,"./RGB.bmp");
+	//replaceadix(file,dstfile);
+	if((fs=fopen(file,"r"))==NULL){
+		printf("%s openfile %s err\n",__FUNCTION__,file);
+		goto fail;
+	}
+	if((fd=fopen(dstfile,"w+"))==NULL){
+		printf("%s openfile %s err\n",__FUNCTION__,dstfile);
+		goto fail;
+	}
+	while(!(feof(fs))){
+		if(fscanf(fs, "%x",&i))
+   			 printf("The integer read was:%x\n", i);
+    		else
+    		{
+        		fprintf(stderr, "Error reading an integer from stdin.\n");
+        		exit(1);
+    		}
+		memcpy(buf,&i,4);
+		i=fwrite(buf,4,1,fd);
+		printf("write data=%d\n",i);
+	};
+
+	fflush(fd);
+	fclose(fs);
+	fclose(fd);
+
+fail:
+	return;
+}
 
 void main( int argc, char *argv[])
 {
-	
+	//hextobin(NULL);
 	dirwalk(".",bintohex);
 	dirwalk(".",createcode);
 }
